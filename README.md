@@ -14,7 +14,7 @@ Where $A, B, C, D$ are all learnable parameters. This model takes in a $1-D$ inp
 
 $$\bar{A} = (I - \Lambda/2 \cdot A)^{-1}(I + \Lambda/2 \cdot A)$$
 
-$$\bar{B} = (I - \Lambda/2 \cdot A)^{-1}\LambdaB$$
+$$\bar{B} = (I - \Lambda/2 \cdot A)^{-1}\Lambda B$$
 
 $$\bar{C} = C$$
 
@@ -28,8 +28,19 @@ Which is very similar to one step of an RNN! This is the first advantage of S4: 
 
 But RNNs have the disadvantage of being hard to train because they are not easily parallelizable. To overcome this problem, let's unroll the RNN representation: 
 
-$$x_0 = \bar{B}u_0, y_0 = \bar{C}\bar{B}u_0$$
+$$x_0 = \bar{B}u_0$$
 
-$$x_1 = \bar{AB}u_0 + \bar{B}u_1, y_1 = \bar{CAB}u_0 + \bar{CB}u_1$$
+$$y_0 = \bar{C}\bar{B}u_0$$
 
-$$x_2 = \bar{A}^2\bar{B}u_0 + \bar{AB}u_1 + \bar{B}u_2, y_2 = \bar{CA}^2\bar{B}u_0 + \bar{CAB}u_1 + \bar{CB}u_2$$
+and again: 
+
+$$x_1 = \bar{AB}u_0 + \bar{B}u_1$$
+
+$$y_1 = \bar{CAB}u_0 + \bar{CB}u_1$$
+
+one more time: 
+
+$$x_2 = \bar{A}^2\bar{B}u_0 + \bar{AB}u_1 + \bar{B}u_2$$
+$$y_2 = \bar{CA}^2\bar{B}u_0 + \bar{CAB}u_1 + \bar{CB}u_2$$
+
+
