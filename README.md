@@ -28,7 +28,6 @@ The discrete SSM is now a sequence to sequence map with input $u_k$ to output $y
 $$
 \begin{align}
 x_k = \bar{A}x_{k-1} + \bar{B}u_k\\
-
 y_k = \bar{C}x_k
 \end{align}
 $$
@@ -50,6 +49,42 @@ $$
 \end{aligned}
 $$
 
+From the above, we see it is possible to turn the sequence map into a convolution if we let the kernel or filter be equal to: 
 
+$$
+\begin{aligned}
+  \boldsymbol{\overline{K}} \in \mathbb{R}^L  = (\boldsymbol{\overline{C}}\boldsymbol{\overline{B}}, \boldsymbol{\overline{C}}\boldsymbol{\overline{A}}\boldsymbol{\overline{B}}, \dots, \boldsymbol{\overline{C}}\boldsymbol{\overline{A}}^{L-1}\boldsymbol{\overline{B}})
+\end{aligned}
+$$
 
+Thus, in order to compute our SSM with a convolution: 
 
+$$
+\begin{aligned}
+     y_k &= \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^k \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^{k-1} \boldsymbol{\overline{B}} u_1 + \dots + \boldsymbol{\overline{C}} \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_{k-1} + \boldsymbol{\overline{C}}\boldsymbol{\overline{B}} u_k\\
+     y &= \boldsymbol{\overline{K}} \ast u
+ \end{aligned}
+ $$
+
+$\overline{K}$ is a huge filter: the size of our sequence length! In other words, if our sequence lengths are 16000, then a filter of length 16000 would be needed and all the powers of $A$ up to 16000 would need to be computed. In order to curb the cost of this convolution, we use the Fast Fourier Transform (FFT) and the discrete convolution theorem. This theorem allows us to calculate the FFT of the filter and the input sequence, multiply them pointwise and then apply an inverse FFT in order to calculate the entire convolution. 
+
+Now, that we can generate sequences with the efficency of an RNN and train our model with the benefits of CNNs, what is holding us back? It turns out with naive initialization of the SSM, the model does quite poorly on most tasks. It is not able to memorize its past even with many training steps. There is also the problem of computing the powers of $A$. If our task involves a sequence of length 16000, then we still need to compute all 16000 powers of $A$ for the filter! Let us first address the memorization problem. In order to allow our SSM to capture long range dependencies, we initialize $A$ with a HiPPO matrix. HiPPO is a class of certain $A$ matrices which allow our hidden/latent states to memorize its past. The most important HiPPO matrix for our purposes is of the form: 
+
+$$
+\begin{aligned}
+  (\text{\textbf{HiPPO Matrix}})
+  \qquad
+  \boldsymbol{A}_{nk} =
+  \begin{cases}
+    (2n+1)^{1/2}(2k+1)^{1/2} & \text{if } n > k \\
+    n+1 & \text{if } n = k \\
+    0 & \text{if } n < k
+  \end{cases}
+\end{aligned}
+$$
+
+This matrix allows the SSM to compress its past history in each state enough to roughly reconstruct its past. 
+
+Finally, the computational bottle neck of computing the powers of the $A$ matrix must be addressed. First, we assume some special structure on our $A$ matrix. More specifically, that the $A$ matrix is a diagonal plus low rank (DPLR) matrix in complex space. 
+1. Assume some special structure on our $A$ matrix
+2. Introduce a generating function on the coefficients of $\overline{K}$
