@@ -41,6 +41,6 @@ $$y_1 = \bar{CAB}u_0 + \bar{CB}u_1$$
 one more time: 
 
 $$x_2 = \bar{A}^2\bar{B}u_0 + \bar{AB}u_1 + \bar{B}u_2$$
-$$y_2 = \bar{CA}^2\bar{B}u_0 + \bar{CAB}u_1 + \bar{CB}u_2$$
+$$y_2 = \overline{CA}^2\bar{B}u_0 + \bar{CAB}u_1 + \bar{CB}u_2$$
 
 
