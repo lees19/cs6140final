@@ -17,8 +17,8 @@ Where $A, B, C, D$ are all learnable parameters. This model takes in a $1-D$ inp
 
 $$
 \begin{align}
-\bar{A} = (I - \Lambda/2 \cdot A)^{-1}(I + \Lambda/2 \cdot A)\\
-\bar{B} = (I - \Lambda/2 \cdot A)^{-1}\Lambda B\\
+\bar{A} = (I - \Delta/2 \cdot A)^{-1}(I + \Delta/2 \cdot A)\\
+\bar{B} = (I - \Delta/2 \cdot A)^{-1}\Delta B\\
 \bar{C} = C
 \end{align}
 $$
