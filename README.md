@@ -1,8 +1,5 @@
 # CS6140 Final: S4 For Sequence Modelling
 
-[Original S4 Paper](https://arxiv.org/abs/2111.00396) 
-[Annotated S4](https://srush.github.io/annotated-s4/)
-
 ## Abstract
 Though many variations of RNN, CNN and Transformers have been created for sequence modeling, they still struggle to model very long sequences. S4 aims to solve this issue using a state space model (SSM) in order to capture the long range dependencies. The goal of this project is to understand all of the parts of S4 and the computational tricks used which make S4 efficent. 
 
@@ -184,7 +181,7 @@ To summarize: S4 is a deep neural network architecture based on the SSM with the
 
 ## Setup
 
-The dataset we will be using is the sequential MNIST data set. This is similar to the MNIST handwritten digit dataset, but the goal is to generate the rest of the digit given the first $N$ (in our case 300) pixels called context. Each data point is a black and white 28x28 image of a pixel, where the goal is to classify the intensity of the pixel (output dimension 256). Each pixel of each image is fed into the model sequentially, rather than the whole image. I am going to be using the S4 layer on 50 epochs, a batch size of 128, a hidden dimension of 64 (for the SSM), and a model dimension of 128 (for the linear unit after the SSM). I will be running this exmaple on Google Colab using their T4 GPU. 
+The dataset we will be using is the sequential MNIST data set. This is similar to the MNIST handwritten digit dataset, but the goal is to generate the rest of the digit given the first $N$ (in our case 300) pixels called context. Each data point is a black and white 28x28 image of a pixel, where the goal is to classify the intensity of the pixel (output dimension 256). Each pixel of each image is fed into the model sequentially, rather than the whole image. I am going to be using the S4 layer on 10 epochs, a batch size of 128, a hidden dimension of 64 (for the SSM), and a model dimension of 128 (for the linear unit after the SSM). I will be running this exmaple on Google Colab using their T4 GPU. 
 
 ## Results
 ![im0 117](https://github.com/lees19/cs6140final/assets/43870417/64a9eabd-be3a-461f-a5e7-9bcf2e6e615d)
@@ -193,3 +190,11 @@ The dataset we will be using is the sequential MNIST data set. This is similar t
 ![im0 81](https://github.com/lees19/cs6140final/assets/43870417/f2f13903-c4ec-4be0-8138-2a3765c627a8)
 ![im0 125](https://github.com/lees19/cs6140final/assets/43870417/49c44849-50c6-44fa-bfc4-b29dc0fe0d49)
 ![im0 120](https://github.com/lees19/cs6140final/assets/43870417/779bf0a1-283a-4afb-b648-808e8a975c5a)
+
+After training the model above for 10 epochs and a model size of about 500k parameters, we obtained a best test loss of 0.55288 and a best test accuracy of 0.8922. From the generated images above, we see the model, even with only 10 epochs, is able to generate some decent images. There have been other attempts at [MNIST generation task](https://paperswithcode.com/sota/image-generation-on-mnist)
+
+## References
+
+[Original S4 Paper](https://arxiv.org/abs/2111.00396) 
+[LSSL Paper, helps with understanding S4](https://arxiv.org/abs/2110.13985)
+[Annotated S4](https://srush.github.io/annotated-s4/)
