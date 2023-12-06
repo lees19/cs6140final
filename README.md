@@ -191,7 +191,13 @@ The dataset we will be using is the sequential MNIST data set. This is similar t
 ![im0 125](https://github.com/lees19/cs6140final/assets/43870417/49c44849-50c6-44fa-bfc4-b29dc0fe0d49)
 ![im0 120](https://github.com/lees19/cs6140final/assets/43870417/779bf0a1-283a-4afb-b648-808e8a975c5a)
 
-After training the model above for 10 epochs and a model size of about 500k parameters, we obtained a best test loss of 0.55288 and a best test accuracy of 0.8922. From the generated images above, we see the model, even with only 10 epochs, is able to generate some decent images. There have been other attempts at [MNIST generation task](https://paperswithcode.com/sota/image-generation-on-mnist)
+After training the model above for 10 epochs and a model size of about 500k parameters, we obtained a best test loss of 0.55288 and a best test accuracy of 0.8922. From the generated images above, we see the model, even with only 10 epochs, is able to generate some decent images. 
+
+## Discussion
+The loss of the small model and the accuracy are quite promising. A model with less than half a million parameters and only 10 epochs, this architecture clearly has a lot of potential for sequence modeling tasks. Indeed, in the original S4 paper, the S4 model does quite well, reaching SoTA in many different long range dependency tasks. The Annotated S4 paper also cites the [MNIST generation task](https://paperswithcode.com/sota/image-generation-on-mnist) in which S4 would easily be SoTA. 
+
+## Conclusion
+In this project, I attempted to understand the inner workings of S4 and why it is efficient. I have also taken the annotated S4 implementation and cleaned up the code to specifically run with S4 and ran a small version of the model on the sequential MNIST dataset. I have used the model to generate some example images given a context of length 308. 
 
 ## References
 
