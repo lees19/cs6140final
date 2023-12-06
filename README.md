@@ -160,3 +160,20 @@ $$
 $$
 
 where $D = (\frac{2}{\Delta} - \Lambda)^{-1}$ and $A_1$ is defined by the terms in the final bracket. 
+
+Finally, our discrete SSM becomes
+
+$$
+\begin{align*}
+  x_{k} &= \boldsymbol{\overline{A}} x_{k-1} + \boldsymbol{\overline{B}} u_k \\
+  &= \boldsymbol{A_1} \boldsymbol{A_0} x_{k-1} + 2 \boldsymbol{A_1} \boldsymbol{B} u_k \\
+  y_k &= \boldsymbol{C} x_k
+\end{align*}
+$$
+
+To finish off the implementation of S4, we must turn the HiPPO matrix into a DPLR matrix. HiPPO must first be written out to be a normal plus low rank (NPLR) matrix. From the NPLR representation, the normal matrix can be diagonalized, and then the diagonal matrix extracted, giving us the $\Lambda$ used in the DPLR matrix!
+
+$$
+\boldsymbol{A} = \boldsymbol{V} \boldsymbol{\Lambda} \boldsymbol{V} ^ * - \boldsymbol{P} \boldsymbol{Q}^\top = \boldsymbol{V} \left( \boldsymbol{\Lambda} - \boldsymbol{V} ^ * \boldsymbol{P} (\boldsymbol{V} ^ * \boldsymbol{Q}) ^ * \right) \boldsymbol{V} ^ *
+$$
+
