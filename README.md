@@ -183,6 +183,10 @@ To summarize: S4 is a deep neural network architecture based on the SSM with the
 
 The dataset we will be using is the sequential MNIST data set. This is similar to the MNIST handwritten digit dataset, but the goal is to generate the rest of the digit given the first $N$ (in our case 300) pixels called context. Each data point is a black and white 28x28 image of a pixel, where the goal is to classify the intensity of the pixel (output dimension 256). Each pixel of each image is fed into the model sequentially, rather than the whole image. I am going to be using the S4 layer on 10 epochs, a batch size of 128, a hidden dimension of 64 (for the SSM), and a model dimension of 128 (for the linear unit after the SSM). I will be running this exmaple on Google Colab using their T4 GPU. 
 
+```
+!python -m train dataset=mnist layer=s4 train.epochs=10 train.bsz=128 train.lr=5e-3 train.lr_schedule=true model.layer.N=64 model.d_model=128 model.n_layers=4 model.dropout=0.0 train.weight_decay=0.05 model.prenorm=true model.embedding=true train.sample=308 
+```
+
 ## Results
 ![im0 117](https://github.com/lees19/cs6140final/assets/43870417/64a9eabd-be3a-461f-a5e7-9bcf2e6e615d)
 ![im0 123](https://github.com/lees19/cs6140final/assets/43870417/467110b7-406a-49d3-9411-625974da427f)
