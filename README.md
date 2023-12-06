@@ -191,3 +191,5 @@ The dataset we will be using is the sequential MNIST data set. This is similar t
 ![im0 123](https://github.com/lees19/cs6140final/assets/43870417/467110b7-406a-49d3-9411-625974da427f)
 ![im0 93](https://github.com/lees19/cs6140final/assets/43870417/7ec51820-97e6-4808-9af3-7e363c83ab71)
 ![im0 81](https://github.com/lees19/cs6140final/assets/43870417/f2f13903-c4ec-4be0-8138-2a3765c627a8)
+![im0 125](https://github.com/lees19/cs6140final/assets/43870417/49c44849-50c6-44fa-bfc4-b29dc0fe0d49)
+![im0 120](https://github.com/lees19/cs6140final/assets/43870417/779bf0a1-283a-4afb-b648-808e8a975c5a)
