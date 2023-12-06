@@ -1,5 +1,8 @@
 # CS6140 Final: S4 For Sequence Modelling
 
+[Original S4 Paper](https://arxiv.org/abs/2111.00396) 
+[Annotated S4](https://srush.github.io/annotated-s4/)
+
 ## Abstract
 Though many variations of RNN, CNN and Transformers have been created for sequence modeling, they still struggle to model very long sequences. S4 aims to solve this issue using a state space model (SSM) in order to capture the long range dependencies. The goal of this project is to understand all of the parts of S4 and the computational tricks used which make S4 efficent. 
 
@@ -177,3 +180,8 @@ $$
 \boldsymbol{A} = \boldsymbol{V} \boldsymbol{\Lambda} \boldsymbol{V} ^ * - \boldsymbol{P} \boldsymbol{Q}^\top = \boldsymbol{V} \left( \boldsymbol{\Lambda} - \boldsymbol{V} ^ * \boldsymbol{P} (\boldsymbol{V} ^ * \boldsymbol{Q}) ^ * \right) \boldsymbol{V} ^ *
 $$
 
+To summarize: S4 is a deep neural network architecture based on the SSM with the $A$ matrix initialized as a HiPPO matrix. However, naively applying the SSM is quite computationally expensive. The authors provide a way of reducing the number of calculations done by reducing the calculation of successive powers of $A$ by assuming certain structures of the $A$ matrix. This allows us to replace the successive powers of $A$ with inverses of the diagonal obtained from the structure placed on $A$. 
+
+##Setup
+
+The dataset we will be using is the sequential MNIST data set. This is similar to the MNIST handwritten digit dataset, but the goal is to generate the rest of the digit given the first $N$ (in our case 300) pixels called context. Each data point is a black and white 28x28 image of a pixel, where the goal is to classify the intensity of the pixel (output dimension 256). Each pixel of each image is fed into the model sequentially, rather than the whole image. I am going to be using the S4 layer on 50 epochs, a batch size of 128, a hidden dimension of 64 (for the SSM), and a model dimension of 128 (for the linear unit after the SSM). I will be running this exmaple on Google Colab using their T4 GPU. 
