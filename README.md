@@ -114,6 +114,14 @@ $$
 \end{aligned}
 $$
 
+```
+def make_HiPPO(N):
+    P = np.sqrt(1 + 2 * np.arange(N))
+    A = P[:, np.newaxis] * P[np.newaxis, :]
+    A = np.tril(A) - np.diag(np.arange(N))
+    return -A
+```
+
 This matrix allows the SSM to compress its past history in each state enough to roughly reconstruct its past. 
 
 Finally, the computational bottle neck of computing the powers of the $A$ matrix must be addressed. First, we assume our SSM has a diagonal plus low rank (DPLR) structure. This means that we assume our $A$ matrix is of the form $\Lambda - PQ^*$ for some diagonal $\Lambda$ and matrices $P, Q, B, C\in \mathbb{C}^{N\times 1}$. Without loss of genearlity, assume these matrices are vectors. With this assumption, the model is sped up in three steps. From the paper: 
