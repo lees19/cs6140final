@@ -273,6 +273,41 @@ $$
 \boldsymbol{A} = \boldsymbol{V} \boldsymbol{\Lambda} \boldsymbol{V} ^ * - \boldsymbol{P} \boldsymbol{Q}^\top = \boldsymbol{V} \left( \boldsymbol{\Lambda} - \boldsymbol{V} ^ * \boldsymbol{P} (\boldsymbol{V} ^ * \boldsymbol{Q}) ^ * \right) \boldsymbol{V} ^ *
 $$
 
+```
+def make_NPLR_HiPPO(N):
+    # Make -HiPPO
+    nhippo = make_HiPPO(N)
+
+    # Add in a rank 1 term. Makes it Normal.
+    P = np.sqrt(np.arange(N) + 0.5)
+
+    # HiPPO also specifies the B matrix
+    B = np.sqrt(2 * np.arange(N) + 1.0)
+    return nhippo, P, B
+
+# After extracting the normal part, we can diagonalize to get out the DPLR terms.
+# Because the normal part is actually skew-symmetric, we can extract the real and complex parts of $\boldsymbol{\Lambda}$ separately.
+# This serves two purposes. First, this gives us finer-grained control over the real and imaginary parts, which can be used to improve stability. Second, this lets us use more powerful diagonalization algorithms for [Hermitian matrices](https://en.wikipedia.org/wiki/Hermitian_matrix) - in fact, the current version of JAX does not support GPU diagonalization for non-Hermitian matrices!
+
+def make_DPLR_HiPPO(N):
+    """Diagonalize NPLR representation"""
+    A, P, B = make_NPLR_HiPPO(N)
+
+    S = A + P[:, np.newaxis] * P[np.newaxis, :]
+
+    # Check skew symmetry
+    S_diag = np.diagonal(S)
+    Lambda_real = np.mean(S_diag) * np.ones_like(S_diag)
+    # assert np.allclose(Lambda_real, S_diag, atol=1e-3)
+
+    # Diagonalize S to V \Lambda V^*
+    Lambda_imag, V = eigh(S * -1j)
+
+    P = V.conj().T @ P
+    B = V.conj().T @ B
+    return Lambda_real + 1j * Lambda_imag, P, B, V
+```
+
 To summarize: S4 is a deep neural network architecture based on the SSM with the $A$ matrix initialized as a HiPPO matrix. However, naively applying the SSM is quite computationally expensive. The authors provide a way of reducing the number of calculations done by reducing the calculation of successive powers of $A$ by assuming certain structures of the $A$ matrix. This allows us to replace the successive powers of $A$ with inverses of the diagonal obtained from the structure placed on $A$. 
 
 ## Setup
