@@ -150,12 +150,12 @@ $$
 \begin{align*}
   \left( \boldsymbol{I} - \frac{\Delta}{2} \boldsymbol{A} \right)^{-1}
   &=
-  \left( \boldsymbol{I} - \frac{\Delta}{2} (\boldsymbol{\Lambda} - \boldsymbol{P} \boldsymbol{Q} ^ * ) \right)^{-1}
-  \\&=
-  \frac{2}{\Delta} \left[ \frac{2}{\Delta} - \boldsymbol{\Lambda} + \boldsymbol{P} \boldsymbol{Q} ^ * \right]^{-1}
-  \\&=
-  \frac{2}{\Delta} \left[ \boldsymbol{D} - \boldsymbol{D} \boldsymbol{P} \left( 1 + \boldsymbol{Q} ^ * \boldsymbol{D} \boldsymbol{P} \right)^{-1} \boldsymbol{Q} ^ * \boldsymbol{D} \right]
-  \\&= \frac{2}{\Delta} \boldsymbol{A_1}
+  \left( \boldsymbol{I} - \frac{\Delta}{2} (\boldsymbol{\Lambda} - \boldsymbol{P} \boldsymbol{Q} ^ * ) \right)^{-1}\\
+  &=
+  \frac{2}{\Delta} \left[ \frac{2}{\Delta} - \boldsymbol{\Lambda} + \boldsymbol{P} \boldsymbol{Q} ^ * \right]^{-1}\\
+  &=
+  \frac{2}{\Delta} \left[ \boldsymbol{D} - \boldsymbol{D} \boldsymbol{P} \left( 1 + \boldsymbol{Q} ^ * \boldsymbol{D} \boldsymbol{P} \right)^{-1} \boldsymbol{Q} ^ * \boldsymbol{D} \right]\\
+  &= \frac{2}{\Delta} \boldsymbol{A_1}
 \end{align*}
 $$
 
