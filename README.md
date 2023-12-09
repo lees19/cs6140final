@@ -239,6 +239,34 @@ $$
 \end{align*}
 $$
 
+```
+def discrete_DPLR(Lambda, P, Q, B, C, step, L):
+    # Convert parameters to matrices
+    B = B[:, np.newaxis]
+    Ct = C[np.newaxis, :]
+
+    N = Lambda.shape[0]
+    A = np.diag(Lambda) - P[:, np.newaxis] @ Q[:, np.newaxis].conj().T
+    I = np.eye(N)
+
+    # Forward Euler
+    A0 = (2.0 / step) * I + A
+
+    # Backward Euler
+    D = np.diag(1.0 / ((2.0 / step) - Lambda))
+    Qc = Q.conj().T.reshape(1, -1)
+    P2 = P.reshape(-1, 1)
+    A1 = D - (D @ P2 * (1.0 / (1 + (Qc @ D @ P2))) * Qc @ D)
+
+    # A bar and B bar
+    Ab = A1 @ A0
+    Bb = 2 * A1 @ B
+
+    # Recover Cbar from Ct
+    Cb = Ct @ inv(I - matrix_power(Ab, L)).conj()
+    return Ab, Bb, Cb.conj()
+```
+
 To finish off the implementation of S4, we must turn the HiPPO matrix into a DPLR matrix. HiPPO must first be written out to be a normal plus low rank (NPLR) matrix. From the NPLR representation, the normal matrix can be diagonalized, and then the diagonal matrix extracted, giving us the $\Lambda$ used in the DPLR matrix!
 
 $$
