@@ -87,6 +87,18 @@ $$
 
 $\overline{K}$ is a huge filter: the size of our sequence length! In other words, if our sequence lengths are 16000, then a filter of length 16000 would be needed and all the powers of $A$ up to 16000 would need to be computed. In order to curb the cost of this convolution, the Fast Fourier Transform (FFT) and the discrete convolution theorem. This theorem allows us to calculate the FFT of the filter and the input sequence, multiply them pointwise and then apply an inverse FFT in order to calculate the entire convolution. 
 
+```
+def causal_convolution(u, K, nofft=False):
+    if nofft:
+        return convolve(u, K, mode="full")[: u.shape[0]]
+    else:
+        assert K.shape[0] == u.shape[0]
+        ud = np.fft.rfft(np.pad(u, (0, K.shape[0])))
+        Kd = np.fft.rfft(np.pad(K, (0, u.shape[0])))
+        out = ud * Kd
+        return np.fft.irfft(out)[: u.shape[0]]
+```
+
 Now, that we can generate sequences with the efficency of an RNN and train our model with the benefits of CNNs, what is holding us back? It turns out with naive initialization of the SSM, the model does quite poorly on most tasks. It is not able to memorize its past even with many training steps. There is also the problem of computing the powers of $A$. If our task involves a sequence of length 16000, then we still need to compute all 16000 powers of $A$ for the filter! Let us first address the memorization problem. In order to allow our SSM to capture long range dependencies, $A$ is initialized with a HiPPO matrix. HiPPO is a class of certain $A$ matrices which allow our hidden/latent states to memorize its past. The most important HiPPO matrix for our purposes is of the form: 
 
 $$
