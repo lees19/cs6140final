@@ -41,6 +41,16 @@ y_k = \bar{C}x_k
 \end{align}
 $$
 
+```
+def scan_SSM(Ab, Bb, Cb, u, x0):
+    def step(x_k_1, u_k):
+        x_k = Ab @ x_k_1 + Bb @ u_k
+        y_k = Cb @ x_k
+        return x_k, y_k
+
+    return jax.lax.scan(step, x0, u)
+```
+
 Which is very similar to one step of an RNN! This is the first advantage of S4: inference is extremely quick as the inference is handled like an RNN. 
 
 But RNNs have the disadvantage of being hard to train because they are not easily parallelizable. To overcome this problem, let's unroll the RNN representation: 
