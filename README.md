@@ -23,6 +23,15 @@ $$
 \end{align}
 $$
 
+```
+def discretize(A, B, C, step):
+    I = np.eye(A.shape[0])
+    BL = inv(I - (step / 2.0) * A)
+    Ab = BL @ (I + (step / 2.0) * A)
+    Bb = (BL * step) @ B
+    return Ab, Bb, C
+```
+
 The discrete SSM is now a sequence to sequence map with input $u_k$ to output $y_k$: 
 
 $$
