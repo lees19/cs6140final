@@ -138,9 +138,9 @@ With the DPLR assumption, it is possible to compute the discretized $A$ matrix w
 $$
 \begin{align*}
   \boldsymbol{I} + \frac{\Delta}{2} \boldsymbol{A}
-  &= \boldsymbol{I} + \frac{\Delta}{2} (\boldsymbol{\Lambda} - \boldsymbol{P} \boldsymbol{Q} ^ * )
-  \\ &= \frac{\Delta}{2} \left[ \frac{2}{\Delta}\boldsymbol{I}+ (\boldsymbol{\Lambda} - \boldsymbol{P} \boldsymbol{Q}^* ) \right]
-  \\ &= \frac{\Delta}{2} \boldsymbol{A_0}
+  &= \boldsymbol{I} + \frac{\Delta}{2} (\boldsymbol{\Lambda} - \boldsymbol{P} \boldsymbol{Q} ^ * )\\ 
+  &= \frac{\Delta}{2} \left[ \frac{2}{\Delta}\boldsymbol{I}+ (\boldsymbol{\Lambda} - \boldsymbol{P} \boldsymbol{Q}^* ) \right]\\
+   &= \frac{\Delta}{2} \boldsymbol{A_0}
 \end{align*}
 $$
 
