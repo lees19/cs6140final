@@ -397,7 +397,130 @@ To summarize: S4 is a deep neural network architecture based on the SSM with the
 
 ## Setup
 
-Like self attention, S4 is a layer and 
+Like self attention, S4 is a layer and can be put into a sequence block with dropout and a linear projection: 
+
+```
+class SequenceBlock(nn.Module):
+    layer_cls: nn.Module
+    layer: dict  # Hyperparameters of inner layer
+    dropout: float
+    d_model: int
+    prenorm: bool = True
+    glu: bool = True
+    training: bool = True
+    decode: bool = False
+
+    def setup(self):
+        self.seq = self.layer_cls(**self.layer, decode=self.decode)
+        self.norm = nn.LayerNorm()
+        self.out = nn.Dense(self.d_model)
+        if self.glu:
+            self.out2 = nn.Dense(self.d_model)
+        self.drop = nn.Dropout(
+            self.dropout,
+            broadcast_dims=[0],
+            deterministic=not self.training,
+        )
+
+    def __call__(self, x):
+        skip = x
+        if self.prenorm:
+            x = self.norm(x)
+        x = self.seq(x)
+        x = self.drop(nn.gelu(x))
+        if self.glu:
+            x = self.out(x) * jax.nn.sigmoid(self.out2(x))
+        else:
+            x = self.out(x)
+        x = skip + self.drop(x)
+        if not self.prenorm:
+            x = self.norm(x)
+        return x
+```
+
+These blocks are then stacked on top of each other to form the layers of our neural network: 
+
+```
+class Embedding(nn.Embed):
+    num_embeddings: int
+    features: int
+
+    @nn.compact
+    def __call__(self, x):
+        y = nn.Embed(self.num_embeddings, self.features)(x[..., 0])
+        return np.where(x > 0, y, 0.0)
+
+
+class StackedModel(nn.Module):
+    layer_cls: nn.Module
+    layer: dict  # Extra arguments to pass into layer constructor
+    d_output: int
+    d_model: int
+    n_layers: int
+    prenorm: bool = True
+    dropout: float = 0.0
+    embedding: bool = False  # Use nn.Embed instead of nn.Dense encoder
+    classification: bool = False
+    training: bool = True
+    decode: bool = False  # Probably should be moved into layer_args
+
+    def setup(self):
+        if self.embedding:
+            self.encoder = Embedding(self.d_output, self.d_model)
+        else:
+            self.encoder = nn.Dense(self.d_model)
+        self.decoder = nn.Dense(self.d_output)
+        self.layers = [
+            SequenceBlock(
+                layer_cls=self.layer_cls,
+                layer=self.layer,
+                prenorm=self.prenorm,
+                d_model=self.d_model,
+                dropout=self.dropout,
+                training=self.training,
+                decode=self.decode,
+            )
+            for _ in range(self.n_layers)
+        ]
+
+    def __call__(self, x):
+        if not self.classification:
+            if not self.embedding:
+                x = x / 255.0  # Normalize
+            if not self.decode:
+                x = np.pad(x[:-1], [(1, 0), (0, 0)])
+        x = self.encoder(x)
+        for layer in self.layers:
+            x = layer(x)
+        if self.classification:
+            x = np.mean(x, axis=0)
+        x = self.decoder(x)
+        return nn.log_softmax(x, axis=-1)
+
+```
+
+However, S4 operates on scalars, meaning it cannot take in more than one feature. To fix this, we simply create one stacked copy for each feature in the dataset: 
+```
+def cloneLayer(layer):
+    return nn.vmap(
+        layer,
+        in_axes=1,
+        out_axes=1,
+        variable_axes={"params": 1, "cache": 1, "prime": 1},
+        split_rngs={"params": True},
+    )
+```
+
+Finally, to add the batch dimension: 
+```
+BatchStackedModel = nn.vmap(
+    StackedModel,
+    in_axes=0,
+    out_axes=0,
+    variable_axes={"params": None, "dropout": None, "cache": 0, "prime": None},
+    split_rngs={"params": False, "dropout": True},
+)
+```
 
 The dataset we will be using is the sequential MNIST data set. This is similar to the MNIST handwritten digit dataset, but the goal is to generate the rest of the digit given the first $N$ (in our case 300) pixels called context. Each data point is a black and white 28x28 image of a pixel, where the goal is to classify the intensity of the pixel (output dimension 256). Each pixel of each image is fed into the model sequentially, rather than the whole image. I am going to be using the S4 layer on 10 epochs, a batch size of 128, a hidden dimension of 64 (for the SSM), and a model dimension of 128 (for the linear unit after the SSM). I will be running this exmaple on Google Colab using their T4 GPU. 
 
