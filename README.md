@@ -703,7 +703,7 @@ After training the model above for 10 epochs and a model size of about 500k para
 The loss of the small model and the accuracy are quite promising. A model with less than half a million parameters and only 10 epochs, this architecture clearly has a lot of potential for sequence modeling tasks. Indeed, in the original S4 paper, the S4 model does quite well, reaching SoTA in many different long range dependency tasks. The Annotated S4 paper also cites the [MNIST generation task](https://paperswithcode.com/sota/image-generation-on-mnist) in which S4 would easily be SoTA. 
 
 ## Conclusion
-In this project, I attempted to understand the inner workings of S4 and why it is efficient. I have also taken the annotated S4 implementation and cleaned up the code to specifically run with S4 and ran a small version of the model on the sequential MNIST dataset. I have used the model to generate some example images given a context of length 308. 
+In this project, I attempted to understand and explain the inner workings of S4 and why it is efficient. I have also taken the annotated S4 implementation and reduced up the code to specifically run with S4 and ran a small version of the model on the sequential MNIST dataset. I have also attempted to explain the training process of the model. The results are promising, as even with the limited compute power, the network does quite well on the given task. I have used the model to generate some example images given a context of length 308. 
 
 ## References
 
