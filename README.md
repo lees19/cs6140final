@@ -524,7 +524,164 @@ BatchStackedModel = nn.vmap(
 
 BatchStackedModel will create a neural network using the S4 layer for a sequence to sequnece map of size (batch_dim, seq_len, hidden_dim). 
 
-Training the model is handled by the functions ```train_epoch``` and train_step. 
+To start training in jax, the first step is to create a ```TrainState```. This will hold inforation such as the optimizer, the learning rate scheduler and the model and will be the primary object for updating the parameters. 
+
+```
+def create_train_state(
+    rng,
+    model_cls,
+    trainloader,
+    lr=1e-3,
+    lr_layer=None,
+    lr_schedule=False,
+    weight_decay=0.0,
+    total_steps=-1,
+):
+    model = model_cls(training=True)
+    init_rng, dropout_rng = jax.random.split(rng, num=2)
+    params = model.init(
+        {"params": init_rng, "dropout": dropout_rng},
+        np.array(next(iter(trainloader))[0].numpy()),
+    )
+
+    params = params["params"]
+
+    # Handle learning rates:
+    # - LR scheduler
+    # - Set custom learning rates on some SSM parameters
+
+    # Note for Debugging... this is all undocumented and so weird. The following links are helpful...
+    #
+    #   > Flax "Recommended" interplay w/ Optax (this bridge needs ironing):
+    #       https://github.com/google/flax/blob/main/docs/flip/1009-optimizer-api.md#multi-optimizer
+    #
+    #   > But... masking doesn't work like the above example suggests!
+    #       Root Explanation: https://github.com/deepmind/optax/issues/159
+    #       Fix: https://github.com/deepmind/optax/discussions/167
+    #
+    #   > Also... Flax FrozenDict doesn't play well with rest of Jax + Optax...
+    #       https://github.com/deepmind/optax/issues/160#issuecomment-896460796
+    #
+    #   > Solution: Use Optax.multi_transform!
+
+    if lr_schedule:
+        schedule_fn = lambda lr: optax.cosine_onecycle_schedule(
+            peak_value=lr,
+            transition_steps=total_steps,
+            pct_start=0.1,
+        )
+    else:
+        schedule_fn = lambda lr: lr
+    # lr_layer is a dictionary from parameter name to LR multiplier
+    if lr_layer is None:
+        lr_layer = {}
+
+    optimizers = {
+        k: optax.adam(learning_rate=schedule_fn(v * lr))
+        for k, v in lr_layer.items()
+    }
+    # Add default optimizer
+    # Note: it would be better to use a dummy key such as None that can't conflict with parameter names,
+    # but this causes a hard-to-trace error; it seems that the transforms keys list is being sorted inside optax.multi_transform
+    # which causes an error since None can't be compared to str
+    optimizers["__default__"] = optax.adamw(
+        learning_rate=schedule_fn(lr),
+        weight_decay=weight_decay,
+    )
+    name_map = map_nested_fn(lambda k, _: k if k in lr_layer else "__default__")
+    tx = optax.multi_transform(optimizers, name_map)
+    # For debugging, this would be the default transform with no scheduler or special params
+    # tx = optax.adamw(learning_rate=lr, weight_decay=0.01)
+
+    # Check that all special parameter names are actually parameters
+    extra_keys = set(lr_layer.keys()) - set(jax.tree_leaves(name_map(params)))
+    assert (
+        len(extra_keys) == 0
+    ), f"Special params {extra_keys} do not correspond to actual params"
+
+    # Print parameter count
+    _is_complex = lambda x: x.dtype in [np.complex64, np.complex128]
+    param_sizes = map_nested_fn(
+        lambda k, param: param.size * (2 if _is_complex(param) else 1)
+        if lr_layer.get(k, lr) > 0.0
+        else 0
+    )(params)
+    print(f"[*] Trainable Parameters: {sum(jax.tree_leaves(param_sizes))}")
+    print(f"[*] Total training steps: {total_steps}")
+
+    return train_state.TrainState.create(
+        apply_fn=model.apply, params=params, tx=tx
+    )
+```
+
+The training loop is handled by the functions ```train_epoch``` and ```train_step```. ```train_epoch``` loops through the dataset and calls ```train_step``` for each of the batches in the dataset. ```train_step``` calculates the gradients with the ```value_and_grad```  function, and applies the gradient updates with ```state.apply_gradients```. Validation is done through the ```validate``` function which act similarly to a training epoch, but with the model with training equals false, so dropout is not applied.
+```
+@partial(jax.jit, static_argnums=(4, 5))
+def train_step(
+    state, rng, batch_inputs, batch_labels, model, classification=False
+):
+    def loss_fn(params):
+        logits, mod_vars = model.apply(
+            {"params": params},
+            batch_inputs,
+            rngs={"dropout": rng},
+            mutable=["intermediates"],
+        )
+        loss = np.mean(cross_entropy_loss(logits, batch_labels))
+        acc = np.mean(compute_accuracy(logits, batch_labels))
+        return loss, (logits, acc)
+
+    if not classification:
+        batch_labels = batch_inputs[:, :, 0]
+
+    grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
+    (loss, (logits, acc)), grads = grad_fn(state.params)
+    state = state.apply_gradients(grads=grads)
+    return state, loss, acc
+
+def train_epoch(state, rng, model, trainloader, classification=False):
+    # Store Metrics
+    model = model(training=True)
+    batch_losses, batch_accuracies = [], []
+    for batch_idx, (inputs, labels) in enumerate(tqdm(trainloader)):
+        inputs = np.array(inputs.numpy())
+        labels = np.array(labels.numpy())  # Not the most efficient...
+        rng, drop_rng = jax.random.split(rng)
+        state, loss, acc = train_step(
+            state,
+            drop_rng,
+            inputs,
+            labels,
+            model,
+            classification=classification,
+        )
+        batch_losses.append(loss)
+        batch_accuracies.append(acc)
+
+    # Return average loss over batches
+    return (
+        state,
+        np.mean(np.array(batch_losses)),
+        np.mean(np.array(batch_accuracies)),
+    )
+
+def validate(params, model, testloader, classification=False):
+    # Compute average loss & accuracy
+    model = model(training=False)
+    losses, accuracies = [], []
+    for batch_idx, (inputs, labels) in enumerate(tqdm(testloader)):
+        inputs = np.array(inputs.numpy())
+        labels = np.array(labels.numpy())  # Not the most efficient...
+        loss, acc = eval_step(
+            inputs, labels, params, model, classification=classification
+        )
+        losses.append(loss)
+        accuracies.append(acc)
+
+    return np.mean(np.array(losses)), np.mean(np.array(accuracies))
+```
+
+Finally, ```example_train``` runs the whole training for the S4 layer on the chosen dataset.
 
 The dataset we will be using is the sequential MNIST data set. This is similar to the MNIST handwritten digit dataset, but the goal is to generate the rest of the digit given the first $N$ (in our case 300) pixels called context. Each data point is a black and white 28x28 image of a pixel, where the goal is to classify the intensity of the pixel (output dimension 256). Each pixel of each image is fed into the model sequentially, rather than the whole image. I am going to be using the S4 layer on 10 epochs, a batch size of 128, a hidden dimension of 64 (for the SSM), and a model dimension of 128 (for the linear unit after the SSM). I will be running this exmaple on Google Colab using their T4 GPU. 
 
