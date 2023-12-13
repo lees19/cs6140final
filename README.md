@@ -308,9 +308,96 @@ def make_DPLR_HiPPO(N):
     return Lambda_real + 1j * Lambda_imag, P, B, V
 ```
 
+Putting everything together, we finally have our S4 layer!: 
+```
+class S4Layer(nn.Module):
+    N: int
+    l_max: int
+    decode: bool = False
+
+    # Special parameters with multiplicative factor on lr and no weight decay (handled by main train script)
+    lr = {
+        "Lambda_re": 0.1,
+        "Lambda_im": 0.1,
+        "P": 0.1,
+        "B": 0.1,
+        "log_step": 0.1,
+    }
+
+    def setup(self):
+        # Learned Parameters (C is complex!)
+        init_A_re, init_A_im, init_P, init_B = hippo_initializer(self.N)
+        self.Lambda_re = self.param("Lambda_re", init_A_re, (self.N,))
+        self.Lambda_im = self.param("Lambda_im", init_A_im, (self.N,))
+        # Ensure the real part of Lambda is negative
+        # (described in the SaShiMi follow-up to S4)
+        self.Lambda = np.clip(self.Lambda_re, None, -1e-4) + 1j * self.Lambda_im
+        self.P = self.param("P", init_P, (self.N,))
+        self.B = self.param("B", init_B, (self.N,))
+        # C should be init as standard normal
+        # This doesn't work due to how JAX handles complex optimizers https://github.com/deepmind/optax/issues/196
+        # self.C = self.param("C", normal(stddev=1.0, dtype=np.complex64), (self.N,))
+        self.C = self.param("C", normal(stddev=0.5**0.5), (self.N, 2))
+        self.C = self.C[..., 0] + 1j * self.C[..., 1]
+        self.D = self.param("D", nn.initializers.ones, (1,))
+        self.step = np.exp(self.param("log_step", log_step_initializer(), (1,)))
+
+        if not self.decode:
+            # CNN mode, compute kernel.
+            self.K = kernel_DPLR(
+                self.Lambda,
+                self.P,
+                self.P,
+                self.B,
+                self.C,
+                self.step,
+                self.l_max,
+            )
+
+        else:
+            # RNN mode, discretize
+
+            # Flax trick to cache discrete form during decoding.
+            def init_discrete():
+                return discrete_DPLR(
+                    self.Lambda,
+                    self.P,
+                    self.P,
+                    self.B,
+                    self.C,
+                    self.step,
+                    self.l_max,
+                )
+
+            ssm_var = self.variable("prime", "ssm", init_discrete)
+            if self.is_mutable_collection("prime"):
+                ssm_var.value = init_discrete()
+            self.ssm = ssm_var.value
+
+            # RNN Cache
+            self.x_k_1 = self.variable(
+                "cache", "cache_x_k", np.zeros, (self.N,), np.complex64
+            )
+
+    def __call__(self, u):
+        # This is identical to SSM Layer
+        if not self.decode:
+            # CNN Mode
+            return causal_convolution(u, self.K) + self.D * u
+        else:
+            # RNN Mode
+            x_k, y_s = scan_SSM(*self.ssm, u[:, np.newaxis], self.x_k_1.value)
+            if self.is_mutable_collection("cache"):
+                self.x_k_1.value = x_k
+            return y_s.reshape(-1).real + self.D * u
+
+```
+
 To summarize: S4 is a deep neural network architecture based on the SSM with the $A$ matrix initialized as a HiPPO matrix. However, naively applying the SSM is quite computationally expensive. The authors provide a way of reducing the number of calculations done by reducing the calculation of successive powers of $A$ by assuming certain structures of the $A$ matrix. This allows us to replace the successive powers of $A$ with inverses of the diagonal obtained from the structure placed on $A$. 
 
 ## Setup
+
+Like self attention, S4 is a layer and 
 
 The dataset we will be using is the sequential MNIST data set. This is similar to the MNIST handwritten digit dataset, but the goal is to generate the rest of the digit given the first $N$ (in our case 300) pixels called context. Each data point is a black and white 28x28 image of a pixel, where the goal is to classify the intensity of the pixel (output dimension 256). Each pixel of each image is fed into the model sequentially, rather than the whole image. I am going to be using the S4 layer on 10 epochs, a batch size of 128, a hidden dimension of 64 (for the SSM), and a model dimension of 128 (for the linear unit after the SSM). I will be running this exmaple on Google Colab using their T4 GPU. 
 
