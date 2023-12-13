@@ -522,6 +522,10 @@ BatchStackedModel = nn.vmap(
 )
 ```
 
+BatchStackedModel will create a neural network using the S4 layer for a sequence to sequnece map of size (batch_dim, seq_len, hidden_dim). 
+
+Training the model is handled by the functions ```train_epoch``` and train_step. 
+
 The dataset we will be using is the sequential MNIST data set. This is similar to the MNIST handwritten digit dataset, but the goal is to generate the rest of the digit given the first $N$ (in our case 300) pixels called context. Each data point is a black and white 28x28 image of a pixel, where the goal is to classify the intensity of the pixel (output dimension 256). Each pixel of each image is fed into the model sequentially, rather than the whole image. I am going to be using the S4 layer on 10 epochs, a batch size of 128, a hidden dimension of 64 (for the SSM), and a model dimension of 128 (for the linear unit after the SSM). I will be running this exmaple on Google Colab using their T4 GPU. 
 
 ```
