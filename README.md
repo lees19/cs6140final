@@ -708,5 +708,8 @@ In this project, I attempted to understand the inner workings of S4 and why it i
 ## References
 
 [Original S4 Paper](https://arxiv.org/abs/2111.00396) 
+[S4 Codebase](https://github.com/state-spaces/s4) 
 [LSSL Paper, helps with understanding S4](https://arxiv.org/abs/2110.13985)
-[Annotated S4](https://srush.github.io/annotated-s4/)
+[Annotated S4 Blog](https://srush.github.io/annotated-s4/)
+[Annotated S4 Code Base](https://github.com/srush/annotated-s4/)
+[Albert Gu Presentation on S4](https://www.youtube.com/watch?v=luCBXCErkCs&t=273s)
